@@ -1,0 +1,58 @@
+
+
+++++++++++++++++++++++++++++++++++++++
+Hacer una base datos con nombre de "Eat Me First"
+
+crear una tabla de MenuDeAlimentos
+*Agregar Alimentos
+*Agregar Bebidas 
+*Mostrar alimentos registrados
+*Eliminar alimento por nombre
+*Calcular cantidad total de alimentos
+
+
+Crear una tabla "Agregar Alimentos "
+*Cantidad
+*Nombre
+*Caducidad
+
+
+ Crear una tabla Agregar Bebidas 
+*Cantidad
+*Nombre
+*Caducidad
+
+hazme 
+- 4 vistas
+- 4 triggers
+- 4 procedimientos almacenados
+- 4 funciones
+
+--------------------------------------------
+crear una tabla de MenuDeAlimentos
+*Nombre del alimento
+*fecha de caducidad
+*Registro alimentos + 
+*Mostrar alimentos registrados
+*Buscar alimento por nombre
+*Buscar alimento + 
+*Eliminar alimento por nombre
+*Ver fecha de caducidad 
+*Calcular cantidad total de alimentos
+
+crear una tabla de Registro alimentos
+*Nombre del alimento
+*fecha de caducidad
+
+crear una tabla de Buscar alimento
+Nombre del alimento
+
+
+
+
+
+
+
+
+
+

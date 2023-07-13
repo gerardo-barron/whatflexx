@@ -1,0 +1,226 @@
+CREATE TABLE MenuDeAlimentos (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Tipo VARCHAR(50),
+    Cantidad INT,
+    Nombre VARCHAR(50),
+    Caducidad DATE
+);
+
+CREATE TABLE AgregarAlimentos (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Cantidad INT,
+    Nombre VARCHAR(50),
+    Caducidad DATE
+);
+
+CREATE TABLE AgregarBebidas (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Cantidad INT,
+    Nombre VARCHAR(50),
+    Caducidad DATE
+);
+------------------------------------------------------------------Vitas --------------------------------------
+-- Vista 1: AlimentosRegistrados
+CREATE VIEW AlimentosRegistrados AS
+SELECT Nombre, Caducidad FROM MenuDeAlimentos;
+
+-- Vista 2: TotalAlimentos
+CREATE VIEW TotalAlimentos AS
+SELECT SUM(Cantidad) AS CantidadTotal FROM MenuDeAlimentos;
+
+-- Vista 3: AlimentosCaducados
+CREATE VIEW AlimentosCaducados AS
+SELECT Nombre, Caducidad FROM MenuDeAlimentos WHERE Caducidad < GETDATE();
+
+-- Vista 4: BebidasConCantidad
+CREATE VIEW BebidasConCantidad AS
+SELECT Nombre, Cantidad FROM AgregarBebidas;
+
+----------------------------triggers---------------------------
+
+-- Trigger 1: AgregarAlimentoTrigger
+CREATE TRIGGER AgregarAlimentoTrigger
+ON AgregarAlimentos
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO MenuDeAlimentos (Tipo, Cantidad, Nombre, Caducidad)
+    SELECT 'Alimento', Cantidad, Nombre, Caducidad FROM inserted;
+END;
+
+-- Trigger 2: AgregarBebidaTrigger
+CREATE TRIGGER AgregarBebidaTrigger
+ON AgregarBebidas
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO MenuDeAlimentos (Tipo, Cantidad, Nombre, Caducidad)
+    SELECT 'Bebida', Cantidad, Nombre, Caducidad FROM inserted;
+END;
+
+-- Trigger 3: EliminarAlimentoTrigger
+CREATE TRIGGER EliminarAlimentoTrigger
+ON MenuDeAlimentos
+INSTEAD OF DELETE
+AS
+BEGIN
+    DELETE FROM MenuDeAlimentos WHERE Nombre IN (SELECT Nombre FROM deleted);
+END;
+
+-- Trigger 4: ActualizarCantidadTrigger
+CREATE TRIGGER ActualizarCantidadTrigger
+ON MenuDeAlimentos
+AFTER UPDATE
+AS
+BEGIN
+    UPDATE MenuDeAlimentos
+    SET Cantidad = i.Cantidad
+    FROM MenuDeAlimentos m
+    INNER JOIN inserted i ON m.ID = i.ID;
+END;
+
+
+--------------------- procedimientos almacenados-----------------------------------------
+
+-- Procedimiento almacenado 1: MostrarAlimentosRegistrados
+CREATE PROCEDURE MostrarAlimentosRegistrados
+AS
+BEGIN
+    SELECT Nombre, Caducidad FROM MenuDeAlimentos;
+END;
+
+-- Procedimiento almacenado 2: EliminarAlimentoPorNombre
+CREATE PROCEDURE EliminarAlimentoPorNombre
+    @Nombre VARCHAR(50)
+AS
+BEGIN
+    DELETE FROM MenuDeAlimentos WHERE Nombre = @Nombre;
+END;
+
+-- Procedimiento almacenado 3: CalcularCantidadTotalAlimentos
+CREATE PROCEDURE CalcularCantidadTotalAlimentos
+AS
+BEGIN
+    SELECT SUM(Cantidad) AS CantidadTotal FROM MenuDeAlimentos;
+END;
+
+-- Procedimiento almacenado 4: MostrarBebidasConCantidad
+CREATE PROCEDURE MostrarBebidasConCantidad
+AS
+BEGIN
+    SELECT Nombre, Cantidad FROM AgregarBebidas;
+END;
+
+---------------------------funciones--------------------------------------
+-- Función 1: CalcularTotalAlimentosPorTipo
+CREATE FUNCTION CalcularTotalAlimentosPorTipo
+    (@Tipo VARCHAR(50))
+RETURNS INT
+AS
+BEGIN
+    DECLARE @TotalAlimentos INT;
+
+    SELECT @TotalAlimentos = SUM(Cantidad)
+    FROM MenuDeAlimentos
+    WHERE Tipo = @Tipo;
+
+    RETURN @TotalAlimentos;
+END;
+
+-- Función 2: VerificarExistenciaAlimento
+CREATE FUNCTION VerificarExistenciaAlimento
+    (@Nombre VARCHAR(50))
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @Existencia BIT;
+
+    IF EXISTS(SELECT * FROM MenuDeAlimentos WHERE Nombre = @Nombre)
+        SET @Existencia = 1;
+    ELSE
+        SET @Existencia = 0;
+
+    RETURN @Existencia;
+END;
+
+-- Función 3: ObtenerAlimentoCaducidadProxima
+CREATE FUNCTION ObtenerAlimentoCaducidadProxima()
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT TOP 1 Nombre, Caducidad
+    FROM MenuDeAlimentos
+    WHERE Caducidad >= GETDATE()
+    ORDER BY Caducidad ASC
+);
+
+
+-- Función 4: ContarAlimentosPorCaducidad
+CREATE FUNCTION ContarAlimentosPorCaducidad
+    (@FechaCaducidad DATE)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @CantidadAlimentos INT;
+
+    SELECT @CantidadAlimentos = COUNT(*)
+    FROM MenuDeAlimentos
+    WHERE Caducidad = @FechaCaducidad;
+
+    RETURN @CantidadAlimentos;
+END;
+
+------------Ejemplos-----------
+--vistas
+SELECT * FROM AlimentosRegistrados;
+SELECT * FROM TotalAlimentos;
+SELECT * FROM BebidasConCantidad;
+SELECT * FROM AlimentosCaducados;
+--triggers
+SELECT name AS TriggerName,
+       OBJECT_NAME(parent_id) AS TableName,
+       type_desc AS TriggerType
+FROM sys.triggers
+WHERE parent_class = 1; -- 1 indica que el objeto padre es una tabla
+
+SELECT OBJECT_DEFINITION(OBJECT_ID('nombre_trigger')) AS TriggerCode;
+
+--procedimientos almacenados
+SELECT name AS ProcedureName
+FROM sys.procedures
+WHERE type = 'P'; -- 'P' indica procedimiento almacenado
+
+SELECT OBJECT_DEFINITION(OBJECT_ID('nombre_procedimiento')) AS ProcedureCode;
+
+---Funciones 
+SELECT name AS FunctionName
+FROM sys.objects
+WHERE type = 'FN'; -- 'FN' indica función escalar
+
+SELECT OBJECT_DEFINITION(OBJECT_ID('nombre_funcion')) AS FunctionCode;
+
+
+----------------------------  vitas --------------------------------
+SELECT Nombre, Caducidad FROM MenuDeAlimentos;
+SELECT SUM(Cantidad) AS CantidadTotal FROM MenuDeAlimentos;
+SELECT Nombre, Caducidad FROM MenuDeAlimentos WHERE Caducidad < GETDATE();
+SELECT Nombre, Cantidad FROM AgregarBebidas;
+
+----------------------------- triggers ------------------------------------
+SELECT OBJECT_DEFINITION(OBJECT_ID('AgregarAlimentoTrigger')) AS TriggerCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('AgregarBebidaTrigger')) AS TriggerCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('EliminarAlimentoTrigger')) AS TriggerCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('EliminarAlimentoTrigger')) AS TriggerCode;
+
+------------------ procedimientos almacenados---------------------------------
+SELECT OBJECT_DEFINITION(OBJECT_ID('MostrarAlimentosRegistrados')) AS ProcedureCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('EliminarAlimentoPorNombre')) AS ProcedureCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('CalcularCantidadTotalAlimentos')) AS ProcedureCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('MostrarBebidasConCantidad')) AS ProcedureCode;
+
+------------------- Funciones --------------------------------------------------
+SELECT OBJECT_DEFINITION(OBJECT_ID('CalcularTotalAlimentosPorTipo')) AS FunctionCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('VerificarExistenciaAlimento')) AS FunctionCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('ObtenerAlimentoCaducidadProxima')) AS FunctionCode;
+SELECT OBJECT_DEFINITION(OBJECT_ID('ContarAlimentosPorCaducidad')) AS FunctionCode;
